@@ -1,0 +1,9 @@
+{
+  "studio_name": "AI 游戏 OPC / 七灵工作室",
+  "timezone": "Asia/Shanghai",
+  "phase": "prototype-validation",
+  "first_game": "七灵·心隅花园",
+  "phase_gate": {"playtests":15,"first_round_completion_pct":70,"want_replay_pct":50,"max_blocker_bugs":0},
+  "monthly_operating_cap_cny": 5000,
+  "human_approval_required": ["spend", "publish", "production_data_change", "ip_license", "pricing_change", "player_communications"]
+}

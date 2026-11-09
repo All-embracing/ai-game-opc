@@ -1,0 +1,56 @@
+[
+  {
+    "id": "G-001",
+    "title": "完成核心消除玩法 15 人可用性测试",
+    "priority": 1,
+    "owner": "Product+QA",
+    "status": "todo",
+    "acceptance": "至少15名非团队用户试玩，记录首局完成率、迷惑点及愿意再玩比例",
+    "agent_eligible": false
+  },
+  {
+    "id": "G-002",
+    "title": "为游戏增加引导和失败复盘",
+    "priority": 2,
+    "owner": "Dev",
+    "status": "todo",
+    "acceptance": "新用户不读说明能在30秒内完成首次有效消除",
+    "agent_eligible": true
+  },
+  {
+    "id": "G-003",
+    "title": "制作七灵正版素材授权清单",
+    "priority": 2,
+    "owner": "IP+Legal",
+    "status": "todo",
+    "acceptance": "全部角色素材含来源、权属、游戏使用授权状态及版本号",
+    "agent_eligible": false
+  },
+  {
+    "id": "G-004",
+    "title": "准备 Steam 商店定位测试包",
+    "priority": 3,
+    "owner": "Growth",
+    "status": "todo",
+    "acceptance": "3套卖点文案和封面概念、20份目标玩家反馈",
+    "agent_eligible": false
+  },
+  {
+    "id": "G-005",
+    "title": "接入游戏内事件埋点模型",
+    "priority": 3,
+    "owner": "Data",
+    "status": "todo",
+    "acceptance": "game_start、move、win、fail 事件可按会话追踪，默认不采集个人信息",
+    "agent_eligible": true
+  },
+  {
+    "id": "G-006",
+    "title": "估算首款产品现金流与止损线",
+    "priority": 1,
+    "owner": "Finance",
+    "status": "todo",
+    "acceptance": "完成基础/低迷/积极三情景，明确回本销量和预算上限",
+    "agent_eligible": false
+  }
+]

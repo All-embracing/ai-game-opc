@@ -1,0 +1,28 @@
+name: OPC Quality Gate
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Python tests
+        run: python -m unittest discover -s tests -v
+      - name: JS syntax check
+        run: |
+          node -e "const fs=require('fs');let s=fs.readFileSync('games/emotion-garden/index.html','utf8');let m=s.match(/<script>([\\s\\S]*?)<\\/script>/);if(!m)process.exit(2);fs.writeFileSync('/tmp/game.js',m[1]);"
+          node --check /tmp/game.js
+      - name: Offline deployment readiness check
+        run: python scripts/doctor.py --output reports/connection-readiness.md
+      - name: Generate daily brief
+        run: python scripts/daily_ops.py

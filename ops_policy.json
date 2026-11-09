@@ -1,0 +1,8 @@
+{
+  "policy_version": "0.3",
+  "agent_write_roots": ["games/", "tests/", "docs/"],
+  "forbidden_extensions": [".pem", ".key", ".p12", ".pfx", ".exe", ".dll", ".so", ".sh", ".bat", ".ps1"],
+  "max_changed_files": 12,
+  "max_changed_file_bytes": 200000,
+  "requires_human_approval": ["spend", "external_publish", "production_deploy", "ip_use", "pricing", "personal_data", "payment", "terms_of_service"]
+}

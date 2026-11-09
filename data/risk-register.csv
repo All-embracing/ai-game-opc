@@ -1,0 +1,6 @@
+risk_id,domain,risk,severity,owner,mitigation,status
+R-001,Security,AI code changes may exceed authorized scope,high,CEO,Policy gate + isolated patch verification + manual PR review,open
+R-002,Cost,API or runner use exceeds budget,high,CEO,Provider spending limits and alerts + run timeouts,open
+R-003,IP,Third-party or unlicensed art enters game,high,CEO,Register ownership and approve assets before publishing,open
+R-004,Market,No real player demand validation,high,CEO,Run recorded playtests before scaling,open
+R-005,Availability,Scheduled job may fail or be delayed,medium,Ops,Check GitHub Actions status and alerts,open

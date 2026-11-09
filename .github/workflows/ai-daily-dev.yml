@@ -1,0 +1,149 @@
+name: OPC AI Daily Dev (Propose PR Only)
+
+# Initial activation: use workflow_dispatch after storing the API secret.
+# Daily runs remain disabled until repository variable ENABLE_AUTONOMOUS_CODING=true.
+on:
+  schedule:
+    - cron: '37 1 * * *'  # 09:37 Asia/Shanghai; GitHub scheduling is not exact.
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: opc-ai-daily-development
+  cancel-in-progress: false
+
+jobs:
+  propose:
+    if: ${{ github.ref == 'refs/heads/main' && (github.event_name == 'workflow_dispatch' || vars.ENABLE_AUTONOMOUS_CODING == 'true') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    outputs:
+      has_patch: ${{ steps.patch.outputs.has_patch }}
+    steps:
+      - name: Check out source without stored git credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Run original tests before giving code to the agent
+        run: python -m unittest discover -s tests -v
+      - name: Codex proposes one task-scoped improvement
+        id: codex
+        uses: openai/codex-action@v1
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          permission-profile: ':workspace'
+          prompt-file: docs/AI_AGENT_TASK.md
+          output-file: codex-summary.md
+      - name: Export ONLY whitelisted game/test/docs edits as a patch
+        id: patch
+        shell: bash
+        run: |
+          git add -N -- games tests docs
+          git diff --binary -- games tests docs > /tmp/opc-agent.patch
+          if [ -s /tmp/opc-agent.patch ]; then
+            echo 'has_patch=true' >> "$GITHUB_OUTPUT"
+          else
+            echo 'has_patch=false' >> "$GITHUB_OUTPUT"
+          fi
+      - name: Upload patch and agent summary
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: opc-ai-candidate-${{ github.run_id }}
+          path: |
+            /tmp/opc-agent.patch
+            codex-summary.md
+          retention-days: 14
+          if-no-files-found: warn
+
+  verify:
+    needs: propose
+    if: needs.propose.outputs.has_patch == 'true'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - name: Check out clean source without stored git credentials
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - name: Retrieve agent patch (no API secret in this job)
+        uses: actions/download-artifact@v4
+        with:
+          name: opc-ai-candidate-${{ github.run_id }}
+          path: /tmp/opc-ai-result
+      - name: Apply patch and verify it is a valid diff
+        run: |
+          git apply --check /tmp/opc-ai-result/opc-agent.patch
+          git apply /tmp/opc-ai-result/opc-agent.patch
+          git add -N -- games tests docs
+      - name: Safety gate — only allowlisted paths and no obvious credentials
+        run: python scripts/policy_gate.py --base HEAD
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Execute unit tests
+        run: python -m unittest discover -s tests -v
+      - name: Check browser game JavaScript syntax
+        shell: bash
+        run: |
+          node -e 'const fs=require("fs"); const html=fs.readFileSync("games/emotion-garden/index.html", "utf8"); const match=html.match(/<script\b[^>]*>([\s\S]*?)<\/script>/i); if(!match)process.exit(2);fs.writeFileSync("/tmp/opc-game.js",match[1])'
+          node --check /tmp/opc-game.js
+
+  submit_for_review:
+    needs: [propose, verify]
+    if: needs.propose.outputs.has_patch == 'true' && needs.verify.result == 'success'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Check out default branch
+        uses: actions/checkout@v4
+      - name: Retrieve verified patch
+        uses: actions/download-artifact@v4
+        with:
+          name: opc-ai-candidate-${{ github.run_id }}
+          path: /tmp/opc-ai-result
+      - name: Apply patch without executing generated project code
+        run: |
+          git apply --check /tmp/opc-ai-result/opc-agent.patch
+          git apply /tmp/opc-ai-result/opc-agent.patch
+          git add -N -- games tests docs
+      - name: Re-check candidate patch policy before PR
+        run: python scripts/policy_gate.py --base HEAD
+      - name: Create or update an approval-only pull request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: opc/ai-daily-candidate
+          delete-branch: true
+          commit-message: 'chore(opc): propose AI game improvement'
+          title: 'OPC AI Candidate: review next game improvement'
+          body: |
+            Automated Codex candidate. The verify job passed the repository
+            policy gate, Python unit tests, and browser-game JavaScript syntax checks.
+
+            **Requires human code, license/IP and gameplay review.**
+            This pull request must NOT be auto-merged or deployed to production.
+
+            Source workflow: OPC AI Daily Dev.
+          add-paths: |
+            games/**
+            tests/**
+            docs/**
